@@ -1,0 +1,827 @@
+:root {
+  --bg: #0a0a0b;
+  --backdrop: #050506;
+  --surface: #161618;
+  --surface-hover: #1c1c1f;
+  --border: #2a2a2d;
+  --text: #ededee;
+  --text-dim: #9a9a9d;
+  --text-faint: #5c5c5f;
+  --dot-live: #f0f0f1;
+  --dot-android: #8a8a8d;
+  --dot-spec: #3c3c3e;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--backdrop);
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 32px 16px;
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Phone-frame mockup -- always visible in this desktop preview so the
+   real device boundary is obvious while testing, regardless of window width. */
+.device {
+  width: 390px;
+  height: 844px;
+  flex: 0 0 auto;
+  background: var(--bg);
+  border-radius: 40px;
+  border: 10px solid #000;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 0 1px #1a1a1a;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 22px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.statusbar-icons { display: flex; align-items: center; gap: 3px; }
+
+.sig-bar {
+  display: inline-block;
+  width: 3px;
+  height: 8px;
+  background: var(--text-dim);
+  border-radius: 1px;
+}
+.sig-bar:nth-child(2) { height: 10px; }
+.sig-bar:nth-child(3) { height: 12px; }
+.sig-bar:nth-child(4) { height: 14px; background: var(--text); }
+
+.batt {
+  width: 20px;
+  height: 11px;
+  margin-left: 6px;
+  border: 1.5px solid var(--text-dim);
+  border-radius: 3px;
+  position: relative;
+  display: inline-block;
+}
+.batt::before {
+  content: "";
+  position: absolute;
+  top: 1px; bottom: 1px; left: 1px;
+  width: 70%;
+  background: var(--text);
+  border-radius: 1px;
+}
+.batt::after {
+  content: "";
+  position: absolute;
+  right: -3px; top: 3px;
+  width: 2px; height: 5px;
+  background: var(--text-dim);
+  border-radius: 0 1px 1px 0;
+}
+
+.appbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 10px 20px 4px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+#rescan {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 16px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.2s ease;
+  margin-top: 2px;
+}
+#rescan:hover { background: var(--surface-hover); }
+#rescan:active { transform: scale(0.92) rotate(90deg); }
+
+.scanbar-track {
+  height: 2px;
+  margin: 10px 20px 0;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.scanbar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--text-faint), var(--text));
+  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Bottom nav dock -- lives at the thumb-reachable bottom edge, not the top.
+   Every category is laid out at once (wrapped, brick-wall style) instead of
+   a scrollable strip; it's the last flex child so it stays pinned while
+   #results scrolls independently above it, however many rows it grows to. */
+.bottom-dock {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+/* font-weight is fixed at 600 for both states on purpose: a bold-on-select
+   swap changes glyph width, which used to shift the flex-wrap breakpoints
+   and reshape the whole dock depending on which chip was active. Locking
+   weight means the wrapped grid is identical no matter what's selected. */
+.chip {
+  flex: 0 0 auto;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.chip:active { transform: scale(0.96); }
+.chip.active {
+  background: var(--text);
+  color: #0a0a0b;
+  border-color: var(--text);
+}
+
+/* App-level actions (Settings, Admin) -- outlined instead of filled so they
+   read as a different kind of control from the scan-category filters. */
+.chip-alt {
+  background: transparent;
+  border: 1px dashed var(--border);
+}
+.chip-alt.active {
+  background: transparent;
+  color: var(--text);
+  border: 1px dashed var(--text);
+}
+
+main {
+  flex: 1;
+  min-height: 0; /* lets this shrink below content size so it scrolls instead of pushing the dock off-frame */
+  padding: 12px 20px 4px;
+  overflow-y: auto;
+}
+
+#cards {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.placeholder {
+  margin: 24px 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: rise 0.35s ease forwards;
+}
+
+@keyframes rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.row:first-of-type { border-top: none; }
+
+.row .label {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.row .value {
+  flex: 0 0 42%;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 20px 2px;
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend[hidden] { display: none; }
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot-live { background: var(--dot-live); box-shadow: 0 0 6px rgba(240,240,241,0.5); }
+.dot-android { background: transparent; border: 1.5px solid var(--dot-android); }
+.dot-spec { background: var(--dot-spec); }
+
+.repair-feedback {
+  padding: 4px 0 8px;
+}
+
+.rf-title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rf-hint {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.rf-notes {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.rf-notes:focus { outline: none; border-color: var(--text); }
+.rf-notes::placeholder { color: var(--text-faint); }
+
+.rf-block {
+  margin-top: 20px;
+}
+
+.rf-label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.rf-file-btn {
+  display: inline-block;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.rf-file-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rf-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.rf-file-item img {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex: 0 0 auto;
+}
+
+.rf-file-item .rf-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rf-file-item .rf-file-remove {
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: 14px;
+  padding: 2px 4px;
+}
+
+.rf-recorder {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rf-record-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 18px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 0.15s ease, transform 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.rf-record-btn.recording {
+  background: var(--text);
+  color: var(--bg);
+  transform: scale(1.08);
+}
+
+.rf-timer {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.rf-media-playback {
+  margin-top: 12px;
+  width: 100%;
+  border-radius: 12px;
+  background: #000;
+  max-height: 220px;
+}
+
+.rf-submit {
+  margin-top: 24px;
+  width: 100%;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rf-submit:disabled {
+  background: var(--surface-hover);
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.rf-status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 16px;
+}
+
+/* ---- Shared form primitives (admin register/login/dashboard) ---- */
+
+.field-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin: 16px 0 6px;
+}
+.field-label:first-of-type { margin-top: 0; }
+
+.field-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 13.5px;
+  font-family: inherit;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+.field-input:focus { outline: none; border-color: var(--text); }
+.field-input::placeholder { color: var(--text-faint); }
+
+.field-error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 15px;
+}
+
+.field-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  min-height: 15px;
+}
+
+.primary-btn {
+  width: 100%;
+  margin-top: 20px;
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 12px;
+  padding: 13px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  width: 100%;
+  margin-top: 10px;
+  background: var(--surface-hover);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---- Admin: register / login / dashboard ---- */
+
+.admin-section { padding: 4px 0 8px; }
+
+.admin-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.admin-hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.dash-whoami {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.text-link {
+  font-size: 13px;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.text-link:hover { color: var(--text-dim); }
+
+.form-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.back-link { font-size: 13px; }
+
+/* ---- PIN show/hide ---- */
+
+.pin-field {
+  position: relative;
+}
+.pin-field .field-input {
+  padding-right: 52px;
+}
+.pin-eye {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  cursor: pointer;
+  user-select: none;
+}
+.pin-eye:hover { color: var(--text-dim); }
+
+/* ---- Location search ---- */
+
+.location-picker { position: relative; }
+
+.location-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.location-result-item {
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+}
+.location-result-item:first-child { border-top: none; }
+.location-result-item:hover { background: var(--surface-hover); color: var(--text); }
+
+.dash-section { margin-bottom: 4px; }
+
+.dash-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 22px 0;
+}
+
+.dash-action {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+.dash-action:hover { background: var(--surface-hover); }
+
+.dash-action-text { display: flex; flex-direction: column; gap: 3px; }
+
+.dash-action-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dash-action-sub {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.dash-action-arrow {
+  font-size: 20px;
+  color: var(--text-faint);
+  flex: 0 0 auto;
+}
+
+.dash-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* ---- Toggle switch ---- */
+
+.switch { display: inline-block; cursor: pointer; flex: 0 0 auto; }
+.switch input { display: none; }
+
+.switch-track {
+  display: block;
+  width: 46px;
+  height: 27px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 21px;
+  height: 21px;
+  background: var(--text-dim);
+  border-radius: 50%;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.switch input:checked + .switch-track {
+  background: var(--text);
+  border-color: var(--text);
+}
+.switch input:checked + .switch-track .switch-thumb {
+  transform: translateX(19px);
+  background: var(--bg);
+}
+
+/* ---- Health summary (developer mode off) ---- */
+
+.health-summary { padding: 4px 0 8px; }
+
+.hs-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.hs-device {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 22px;
+}
+
+.hs-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.hs-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.hs-empty-body {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.hs-result-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hs-result-at {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin: 4px 0 12px;
+}
+
+.hs-field {
+  font-size: 13px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+.hs-field:first-of-type { border-top: none; }
+.hs-field .hs-key { color: var(--text-dim); }
+.hs-field .hs-val { color: var(--text); }
+
+/* ---- Repair feedback modal ---- */
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-end;
+  z-index: 50;
+  border-radius: inherit;
+}
+
+.modal-card {
+  width: 100%;
+  max-height: 88%;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  animation: modal-rise 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes modal-rise {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px 12px;
+  flex: 0 0 auto;
+}
+
+.modal-header .rf-title { margin: 0; }
+
+.modal-close {
+  font-size: 15px;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.modal-close:hover { color: var(--text-dim); }
+
+.modal-body {
+  padding: 0 20px 24px;
+  overflow-y: auto;
+}
+
+/* Safety net: several elements above set their own unconditional `display`
+   (flex, for layout), which ties in CSS specificity with the `[hidden]`
+   attribute selector and can silently lose depending on cascade order --
+   bit us twice already (.legend, .modal-overlay). One !important rule at
+   the end of the sheet beats all of them, permanently, for every element,
+   including ones added later. */
+[hidden] { display: none !important; }
+

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zinaata</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="device">
+  <div class="statusbar">
+    <span id="clock">9:41</span>
+    <span class="statusbar-icons">
+      <i class="sig-bar"></i><i class="sig-bar"></i><i class="sig-bar"></i><i class="sig-bar"></i>
+      <i class="batt"></i>
+    </span>
+  </div>
+
+  <div class="appbar">
+    <div>
+      <h1>ZINAATA</h1>
+      <p class="subtitle">Device Scan</p>
+    </div>
+    <button id="rescan" aria-label="Rescan">⟳</button>
+  </div>
+
+  <div class="scanbar-track"><div id="scanbar" class="scanbar"></div></div>
+
+  <div class="legend" id="legend">
+    <span><i class="dot dot-live"></i>live</span>
+    <span><i class="dot dot-android"></i>android-only</span>
+    <span><i class="dot dot-spec"></i>spec-sheet</span>
+  </div>
+
+  <main id="results">
+    <div id="cards"></div>
+    <div id="healthSummary" class="health-summary" hidden>
+      <div class="hs-eyebrow">Device</div>
+      <div id="hsDeviceModel" class="hs-device"></div>
+      <div class="hs-card">
+        <div id="hsBody">
+          <div class="hs-empty-title">Health summary not available yet</div>
+          <p class="hs-empty-body">
+            This phone has been scanned, but a diagnostic analysis hasn't been downloaded yet.
+            An admin needs to run the analysis and download the results.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div id="adminSection" class="admin-section" hidden>
+      <div id="adminRegister" class="admin-form">
+        <div class="form-nav">
+          <span class="text-link back-link" data-goto-all>‹ Back</span>
+          <span class="text-link" data-show-login>Already registered? Log in</span>
+        </div>
+        <h2 class="admin-title">Admin registration</h2>
+        <p class="admin-hint">One-time setup for whoever manages this device's diagnostic data. Name, phone, location, and a 4-6 digit PIN, no OTP yet.</p>
+        <label class="field-label">Name</label>
+        <input type="text" id="regName" class="field-input" placeholder="Full name">
+        <label class="field-label">Phone number</label>
+        <input type="tel" id="regPhone" class="field-input" placeholder="10-digit phone number" inputmode="numeric" maxlength="10">
+        <label class="field-label">Location</label>
+        <div class="location-picker">
+          <input type="text" id="regLocation" class="field-input" placeholder="Search for a city…" autocomplete="off">
+          <div id="regLocationResults" class="location-results" hidden></div>
+        </div>
+        <label class="field-label">PIN (4-6 digits)</label>
+        <div class="pin-field">
+          <input type="password" id="regPin" class="field-input" placeholder="PIN" inputmode="numeric" maxlength="6">
+          <span class="pin-eye" data-toggle-eye="regPin">show</span>
+        </div>
+        <label class="field-label">Confirm PIN</label>
+        <div class="pin-field">
+          <input type="password" id="regPinConfirm" class="field-input" placeholder="Confirm PIN" inputmode="numeric" maxlength="6">
+          <span class="pin-eye" data-toggle-eye="regPinConfirm">show</span>
+        </div>
+        <p id="regError" class="field-error"></p>
+        <button id="regSubmit" class="primary-btn">Register</button>
+      </div>
+
+      <div id="adminLogin" class="admin-form" hidden>
+        <div class="form-nav">
+          <span class="text-link back-link" data-goto-all>‹ Back</span>
+          <span class="text-link" data-show-register>New engineer? Register</span>
+        </div>
+        <h2 class="admin-title">Admin login</h2>
+        <label class="field-label">Phone number</label>
+        <input type="tel" id="loginPhone" class="field-input" placeholder="10-digit phone number" inputmode="numeric" maxlength="10">
+        <label class="field-label">PIN</label>
+        <div class="pin-field">
+          <input type="password" id="loginPin" class="field-input" placeholder="PIN" inputmode="numeric" maxlength="6">
+          <span class="pin-eye" data-toggle-eye="loginPin">show</span>
+        </div>
+        <p id="loginError" class="field-error"></p>
+        <button id="loginSubmit" class="primary-btn">Log in</button>
+      </div>
+
+      <div id="adminDashboard" class="admin-dashboard" hidden>
+        <div class="dash-header">
+          <div>
+            <h2 class="admin-title">Admin</h2>
+            <p id="dashWhoami" class="dash-whoami"></p>
+          </div>
+          <span id="logoutBtn" class="text-link">Log out</span>
+        </div>
+
+        <div class="dash-section">
+          <div class="field-label">Backend URL</div>
+          <input type="url" id="backendUrlInput" class="field-input" placeholder="https://your-app.up.railway.app">
+          <button id="saveUrlBtn" class="secondary-btn">Save URL</button>
+        </div>
+
+        <div class="dash-divider"></div>
+
+        <div class="dash-section">
+          <div class="field-label">Device Owner</div>
+          <p class="admin-hint" style="margin-top: 0;">Whose phone this is — tags every scan and repair-feedback submission so data from different phones doesn't get mixed up.</p>
+          <input type="text" id="ownerName" class="field-input" placeholder="Owner's name" style="margin-top: 10px;">
+          <input type="tel" id="ownerPhone" class="field-input" placeholder="Owner's 10-digit phone number" inputmode="numeric" maxlength="10" style="margin-top: 10px;">
+          <div class="location-picker" style="margin-top: 10px;">
+            <input type="text" id="ownerLocation" class="field-input" placeholder="Search for a city…" autocomplete="off">
+            <div id="ownerLocationResults" class="location-results" hidden></div>
+          </div>
+          <button id="saveOwnerBtn" class="secondary-btn">Save Owner Info</button>
+        </div>
+
+        <div class="dash-divider"></div>
+
+        <button id="repairFeedbackOpen" class="dash-action">
+          <div class="dash-action-text">
+            <div class="dash-action-title">Repair Feedback</div>
+            <div class="dash-action-sub">Log what was wrong and what was done — notes, photos, voice, video.</div>
+          </div>
+          <span class="dash-action-arrow">›</span>
+        </button>
+
+        <button id="downloadDatasetBtn" class="dash-action">
+          <div class="dash-action-text">
+            <div class="dash-action-title">Download Dataset</div>
+            <div class="dash-action-sub">Pull the processed diagnostic output for this device.</div>
+          </div>
+          <span class="dash-action-arrow">›</span>
+        </button>
+        <p id="downloadStatus" class="field-hint"></p>
+
+        <div class="dash-divider"></div>
+
+        <div class="dash-toggle-row">
+          <div class="dash-action-text">
+            <div class="dash-action-title">Developer Mode</div>
+            <div class="dash-action-sub">Off shows a simple health summary. On shows the full technical scan.</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="devModeToggle">
+            <span class="switch-track"><span class="switch-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <nav class="bottom-dock" id="chip-row"></nav>
+
+  <div id="repairFeedbackModal" class="modal-overlay" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="rf-title">Repair Feedback</h2>
+        <span id="rfModalClose" class="modal-close">✕</span>
+      </div>
+      <div class="modal-body">
+        <p class="rf-hint">What was wrong, what you did about it. As long as you need.</p>
+        <textarea id="rfNotes" class="rf-notes" placeholder="Repair notes…"></textarea>
+
+        <div class="rf-block">
+          <div class="rf-label">Attachments</div>
+          <label class="rf-file-btn">
+            Add photos / files
+            <input type="file" id="rfFiles" multiple hidden>
+          </label>
+          <div id="rfFileList" class="rf-file-list"></div>
+        </div>
+
+        <div class="rf-block">
+          <div class="rf-label">Voice note</div>
+          <div class="rf-recorder">
+            <button id="rfAudioBtn" class="rf-record-btn" aria-label="Hold to record audio">●</button>
+            <span id="rfAudioTimer" class="rf-timer">Hold to record</span>
+          </div>
+          <audio id="rfAudioPlayback" class="rf-media-playback" controls hidden></audio>
+        </div>
+
+        <div class="rf-block">
+          <div class="rf-label">Video</div>
+          <div class="rf-recorder">
+            <button id="rfVideoBtn" class="rf-record-btn" aria-label="Hold to record video">●</button>
+            <span id="rfVideoTimer" class="rf-timer">Hold to record</span>
+          </div>
+          <video id="rfVideoLive" class="rf-media-playback" autoplay muted playsinline hidden></video>
+          <video id="rfVideoPlayback" class="rf-media-playback" controls hidden></video>
+        </div>
+
+        <button id="rfSubmit" class="rf-submit">Submit Feedback</button>
+        <p id="rfStatus" class="rf-status"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
